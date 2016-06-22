@@ -2,17 +2,29 @@
  * @author mrdoob / http://mrdoob.com/
  */
 
-var THREE = { REVISION: '71' };
+var THREE = { REVISION: '78' };
 
-// browserify support
+//
 
-if ( typeof module === 'object' ) {
+if ( typeof define === 'function' && define.amd ) {
+
+	define( 'three', THREE );
+
+} else if ( 'undefined' !== typeof exports && 'undefined' !== typeof module ) {
 
 	module.exports = THREE;
 
 }
 
-// polyfills
+// Polyfills
+
+if ( Number.EPSILON === undefined ) {
+
+	Number.EPSILON = Math.pow( 2, - 52 );
+
+}
+
+//
 
 if ( Math.sign === undefined ) {
 
@@ -20,215 +32,304 @@ if ( Math.sign === undefined ) {
 
 	Math.sign = function ( x ) {
 
-		return ( x < 0 ) ? - 1 : ( x > 0 ) ? 1 : +x;
+		return ( x < 0 ) ? - 1 : ( x > 0 ) ? 1 : + x;
 
 	};
 
 }
 
+if ( Function.prototype.name === undefined ) {
 
-// set the default log handlers
-THREE.log = function() { console.log.apply( console, arguments ); }
-THREE.warn = function() { console.warn.apply( console, arguments ); }
-THREE.error = function() { console.error.apply( console, arguments ); }
+	// Missing in IE9-11.
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name
 
+	Object.defineProperty( Function.prototype, 'name', {
 
-// https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent.button
+		get: function () {
 
-THREE.MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
+			return this.toString().match( /^\s*function\s*(\S*)\s*\(/ )[ 1 ];
 
-// GL STATE CONSTANTS
+		}
 
-THREE.CullFaceNone = 0;
-THREE.CullFaceBack = 1;
-THREE.CullFaceFront = 2;
-THREE.CullFaceFrontBack = 3;
+	} );
 
-THREE.FrontFaceDirectionCW = 0;
-THREE.FrontFaceDirectionCCW = 1;
+}
 
-// SHADOWING TYPES
+if ( Object.assign === undefined ) {
 
-THREE.BasicShadowMap = 0;
-THREE.PCFShadowMap = 1;
-THREE.PCFSoftShadowMap = 2;
+	// Missing in IE.
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
 
-// MATERIAL CONSTANTS
+	( function () {
 
-// side
+		Object.assign = function ( target ) {
 
-THREE.FrontSide = 0;
-THREE.BackSide = 1;
-THREE.DoubleSide = 2;
+			'use strict';
 
-// shading
+			if ( target === undefined || target === null ) {
 
-THREE.NoShading = 0;
-THREE.FlatShading = 1;
-THREE.SmoothShading = 2;
+				throw new TypeError( 'Cannot convert undefined or null to object' );
 
-// colors
+			}
 
-THREE.NoColors = 0;
-THREE.FaceColors = 1;
-THREE.VertexColors = 2;
+			var output = Object( target );
 
-// blending modes
+			for ( var index = 1; index < arguments.length; index ++ ) {
 
-THREE.NoBlending = 0;
-THREE.NormalBlending = 1;
-THREE.AdditiveBlending = 2;
-THREE.SubtractiveBlending = 3;
-THREE.MultiplyBlending = 4;
-THREE.CustomBlending = 5;
+				var source = arguments[ index ];
 
-// custom blending equations
-// (numbers start from 100 not to clash with other
-//  mappings to OpenGL constants defined in Texture.js)
+				if ( source !== undefined && source !== null ) {
 
-THREE.AddEquation = 100;
-THREE.SubtractEquation = 101;
-THREE.ReverseSubtractEquation = 102;
-THREE.MinEquation = 103;
-THREE.MaxEquation = 104;
+					for ( var nextKey in source ) {
 
-// custom blending destination factors
+						if ( Object.prototype.hasOwnProperty.call( source, nextKey ) ) {
 
-THREE.ZeroFactor = 200;
-THREE.OneFactor = 201;
-THREE.SrcColorFactor = 202;
-THREE.OneMinusSrcColorFactor = 203;
-THREE.SrcAlphaFactor = 204;
-THREE.OneMinusSrcAlphaFactor = 205;
-THREE.DstAlphaFactor = 206;
-THREE.OneMinusDstAlphaFactor = 207;
+							output[ nextKey ] = source[ nextKey ];
 
-// custom blending source factors
+						}
 
-//THREE.ZeroFactor = 200;
-//THREE.OneFactor = 201;
-//THREE.SrcAlphaFactor = 204;
-//THREE.OneMinusSrcAlphaFactor = 205;
-//THREE.DstAlphaFactor = 206;
-//THREE.OneMinusDstAlphaFactor = 207;
-THREE.DstColorFactor = 208;
-THREE.OneMinusDstColorFactor = 209;
-THREE.SrcAlphaSaturateFactor = 210;
+					}
 
+				}
 
-// TEXTURE CONSTANTS
+			}
 
-THREE.MultiplyOperation = 0;
-THREE.MixOperation = 1;
-THREE.AddOperation = 2;
+			return output;
 
-// Mapping modes
+		};
 
-THREE.UVMapping = 300;
+	} )();
 
-THREE.CubeReflectionMapping = 301;
-THREE.CubeRefractionMapping = 302;
+}
 
-THREE.EquirectangularReflectionMapping = 303;
-THREE.EquirectangularRefractionMapping = 304;
+//
 
-THREE.SphericalReflectionMapping = 305;
+Object.assign( THREE, {
 
-// Wrapping modes
+	// https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent.button
 
-THREE.RepeatWrapping = 1000;
-THREE.ClampToEdgeWrapping = 1001;
-THREE.MirroredRepeatWrapping = 1002;
+	MOUSE: { LEFT: 0, MIDDLE: 1, RIGHT: 2 },
 
-// Filters
+	// GL STATE CONSTANTS
 
-THREE.NearestFilter = 1003;
-THREE.NearestMipMapNearestFilter = 1004;
-THREE.NearestMipMapLinearFilter = 1005;
-THREE.LinearFilter = 1006;
-THREE.LinearMipMapNearestFilter = 1007;
-THREE.LinearMipMapLinearFilter = 1008;
+	CullFaceNone: 0,
+	CullFaceBack: 1,
+	CullFaceFront: 2,
+	CullFaceFrontBack: 3,
 
-// Data types
+	FrontFaceDirectionCW: 0,
+	FrontFaceDirectionCCW: 1,
 
-THREE.UnsignedByteType = 1009;
-THREE.ByteType = 1010;
-THREE.ShortType = 1011;
-THREE.UnsignedShortType = 1012;
-THREE.IntType = 1013;
-THREE.UnsignedIntType = 1014;
-THREE.FloatType = 1015;
-THREE.HalfFloatType = 1025;
+	// SHADOWING TYPES
 
-// Pixel types
+	BasicShadowMap: 0,
+	PCFShadowMap: 1,
+	PCFSoftShadowMap: 2,
 
-//THREE.UnsignedByteType = 1009;
-THREE.UnsignedShort4444Type = 1016;
-THREE.UnsignedShort5551Type = 1017;
-THREE.UnsignedShort565Type = 1018;
+	// MATERIAL CONSTANTS
 
-// Pixel formats
+	// side
 
-THREE.AlphaFormat = 1019;
-THREE.RGBFormat = 1020;
-THREE.RGBAFormat = 1021;
-THREE.LuminanceFormat = 1022;
-THREE.LuminanceAlphaFormat = 1023;
-// THREE.RGBEFormat handled as THREE.RGBAFormat in shaders
-THREE.RGBEFormat = THREE.RGBAFormat; //1024;
+	FrontSide: 0,
+	BackSide: 1,
+	DoubleSide: 2,
 
-// DDS / ST3C Compressed texture formats
+	// shading
 
-THREE.RGB_S3TC_DXT1_Format = 2001;
-THREE.RGBA_S3TC_DXT1_Format = 2002;
-THREE.RGBA_S3TC_DXT3_Format = 2003;
-THREE.RGBA_S3TC_DXT5_Format = 2004;
+	FlatShading: 1,
+	SmoothShading: 2,
 
+	// colors
 
-// PVRTC compressed texture formats
+	NoColors: 0,
+	FaceColors: 1,
+	VertexColors: 2,
 
-THREE.RGB_PVRTC_4BPPV1_Format = 2100;
-THREE.RGB_PVRTC_2BPPV1_Format = 2101;
-THREE.RGBA_PVRTC_4BPPV1_Format = 2102;
-THREE.RGBA_PVRTC_2BPPV1_Format = 2103;
+	// blending modes
 
+	NoBlending: 0,
+	NormalBlending: 1,
+	AdditiveBlending: 2,
+	SubtractiveBlending: 3,
+	MultiplyBlending: 4,
+	CustomBlending: 5,
 
-// DEPRECATED
+	// custom blending equations
+	// (numbers start from 100 not to clash with other
+	// mappings to OpenGL constants defined in Texture.js)
 
-THREE.Projector = function () {
+	AddEquation: 100,
+	SubtractEquation: 101,
+	ReverseSubtractEquation: 102,
+	MinEquation: 103,
+	MaxEquation: 104,
 
-	THREE.error( 'THREE.Projector has been moved to /examples/js/renderers/Projector.js.' );
+	// custom blending destination factors
 
-	this.projectVector = function ( vector, camera ) {
+	ZeroFactor: 200,
+	OneFactor: 201,
+	SrcColorFactor: 202,
+	OneMinusSrcColorFactor: 203,
+	SrcAlphaFactor: 204,
+	OneMinusSrcAlphaFactor: 205,
+	DstAlphaFactor: 206,
+	OneMinusDstAlphaFactor: 207,
 
-		THREE.warn( 'THREE.Projector: .projectVector() is now vector.project().' );
-		vector.project( camera );
+	// custom blending source factors
+
+	//ZeroFactor: 200,
+	//OneFactor: 201,
+	//SrcAlphaFactor: 204,
+	//OneMinusSrcAlphaFactor: 205,
+	//DstAlphaFactor: 206,
+	//OneMinusDstAlphaFactor: 207,
+	DstColorFactor: 208,
+	OneMinusDstColorFactor: 209,
+	SrcAlphaSaturateFactor: 210,
 
-	};
+	// depth modes
 
-	this.unprojectVector = function ( vector, camera ) {
+	NeverDepth: 0,
+	AlwaysDepth: 1,
+	LessDepth: 2,
+	LessEqualDepth: 3,
+	EqualDepth: 4,
+	GreaterEqualDepth: 5,
+	GreaterDepth: 6,
+	NotEqualDepth: 7,
 
-		THREE.warn( 'THREE.Projector: .unprojectVector() is now vector.unproject().' );
-		vector.unproject( camera );
 
-	};
+	// TEXTURE CONSTANTS
 
-	this.pickingRay = function ( vector, camera ) {
+	MultiplyOperation: 0,
+	MixOperation: 1,
+	AddOperation: 2,
 
-		THREE.error( 'THREE.Projector: .pickingRay() is now raycaster.setFromCamera().' );
+	// Tone Mapping modes
 
-	};
+	NoToneMapping: 0, // do not do any tone mapping, not even exposure (required for special purpose passes.)
+	LinearToneMapping: 1, // only apply exposure.
+	ReinhardToneMapping: 2,
+	Uncharted2ToneMapping: 3, // John Hable
+	CineonToneMapping: 4, // optimized filmic operator by Jim Hejl and Richard Burgess-Dawson
 
-};
+	// Mapping modes
 
-THREE.CanvasRenderer = function () {
+	UVMapping: 300,
 
-	THREE.error( 'THREE.CanvasRenderer has been moved to /examples/js/renderers/CanvasRenderer.js' );
+	CubeReflectionMapping: 301,
+	CubeRefractionMapping: 302,
 
-	this.domElement = document.createElement( 'canvas' );
-	this.clear = function () {};
-	this.render = function () {};
-	this.setClearColor = function () {};
-	this.setSize = function () {};
+	EquirectangularReflectionMapping: 303,
+	EquirectangularRefractionMapping: 304,
 
-};
+	SphericalReflectionMapping: 305,
+	CubeUVReflectionMapping: 306,
+	CubeUVRefractionMapping: 307,
+
+	// Wrapping modes
+
+	RepeatWrapping: 1000,
+	ClampToEdgeWrapping: 1001,
+	MirroredRepeatWrapping: 1002,
+
+	// Filters
+
+	NearestFilter: 1003,
+	NearestMipMapNearestFilter: 1004,
+	NearestMipMapLinearFilter: 1005,
+	LinearFilter: 1006,
+	LinearMipMapNearestFilter: 1007,
+	LinearMipMapLinearFilter: 1008,
+
+	// Data types
+
+	UnsignedByteType: 1009,
+	ByteType: 1010,
+	ShortType: 1011,
+	UnsignedShortType: 1012,
+	IntType: 1013,
+	UnsignedIntType: 1014,
+	FloatType: 1015,
+	HalfFloatType: 1025,
+
+	// Pixel types
+
+	//UnsignedByteType: 1009,
+	UnsignedShort4444Type: 1016,
+	UnsignedShort5551Type: 1017,
+	UnsignedShort565Type: 1018,
+
+	// Pixel formats
+
+	AlphaFormat: 1019,
+	RGBFormat: 1020,
+	RGBAFormat: 1021,
+	LuminanceFormat: 1022,
+	LuminanceAlphaFormat: 1023,
+	// THREE.RGBEFormat handled as THREE.RGBAFormat in shaders
+	RGBEFormat: THREE.RGBAFormat, //1024;
+	DepthFormat: 1026,
+
+	// DDS / ST3C Compressed texture formats
+
+	RGB_S3TC_DXT1_Format: 2001,
+	RGBA_S3TC_DXT1_Format: 2002,
+	RGBA_S3TC_DXT3_Format: 2003,
+	RGBA_S3TC_DXT5_Format: 2004,
+
+	// PVRTC compressed texture formats
+
+	RGB_PVRTC_4BPPV1_Format: 2100,
+	RGB_PVRTC_2BPPV1_Format: 2101,
+	RGBA_PVRTC_4BPPV1_Format: 2102,
+	RGBA_PVRTC_2BPPV1_Format: 2103,
+
+	// ETC compressed texture formats
+
+	RGB_ETC1_Format: 2151,
+
+	// Loop styles for AnimationAction
+
+	LoopOnce: 2200,
+	LoopRepeat: 2201,
+	LoopPingPong: 2202,
+
+	// Interpolation
+
+	InterpolateDiscrete: 2300,
+	InterpolateLinear: 2301,
+	InterpolateSmooth: 2302,
+
+	// Interpolant ending modes
+
+	ZeroCurvatureEnding: 2400,
+	ZeroSlopeEnding: 2401,
+	WrapAroundEnding: 2402,
+
+	// Triangle Draw modes
+
+	TrianglesDrawMode: 0,
+	TriangleStripDrawMode: 1,
+	TriangleFanDrawMode: 2,
+
+	// Texture Encodings
+
+	LinearEncoding: 3000, // No encoding at all.
+	sRGBEncoding: 3001,
+	GammaEncoding: 3007, // uses GAMMA_FACTOR, for backwards compatibility with WebGLRenderer.gammaInput/gammaOutput
+
+	// The following Texture Encodings are for RGB-only (no alpha) HDR light emission sources.
+	// These encodings should not specified as output encodings except in rare situations.
+	RGBEEncoding: 3002, // AKA Radiance.
+	LogLuvEncoding: 3003,
+	RGBM7Encoding: 3004,
+	RGBM16Encoding: 3005,
+	RGBDEncoding: 3006, // MaxRange is 256.
+
+	// Depth packing strategies
+
+	BasicDepthPacking: 3200, // for writing to float textures for high precision or for visualizing results in RGB buffers
+	RGBADepthPacking: 3201 // for packing into RGBA buffers.
+
+} );
